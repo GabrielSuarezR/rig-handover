@@ -17,6 +17,7 @@ describe('readNight', () => {
     if (!night) return;
     expect(night.night).toBe('2026-10-28');
     expect(night.badLines).toBe(1);
+    expect(night.counts).toEqual({ ok: 10, retry: 4, fail: 1 });
     expect(night.rows.map((r) => r.job)).toEqual([
       'digest/render',
       'fixtures/refresh',
@@ -72,7 +73,10 @@ describe('readNight', () => {
 
   it('gives no rows and no bad lines for an empty file', () => {
     const dir = tempRuns({ '2026-01-01.jsonl': '' });
-    expect(readNight(dir, '2026-01-01')).toEqual({ night: '2026-01-01', rows: [], badLines: 0 });
+    expect(readNight(dir, '2026-01-01')).toEqual({ night: '2026-01-01', rows: [],
+      badLines: 0,
+      counts: { ok: 0, retry: 0, fail: 0 },
+    });
   });
 
   it('counts lines with bad JSON or bad fields, skips blank lines', () => {

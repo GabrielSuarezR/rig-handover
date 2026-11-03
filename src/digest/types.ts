@@ -28,6 +28,7 @@ export type Night = {
   night: string; // YYYY-MM-DD
   rows: DigestRow[];
   badLines: number;
+  counts: { ok: number; retry: number; fail: number }; // parsed lines by status
 };
 
 // Returns null when runs/<night>.jsonl does not exist. An empty file gives rows: [].
