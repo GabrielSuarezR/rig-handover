@@ -1,0 +1,53 @@
+# Plan morning-digest § 3/§ 4, ADR 0003. Builds the digest preview in CI and deploys it to
+# GitHub Pages, so the HTML is never committed. LANE_MARKER comes from the repo secret; with
+# the secret deleted, the same link gets the page with "no marker set".
+name: preview
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Save /digest/2026-10-28 as one HTML file
+        env:
+          LANE_MARKER: ${{ secrets.LANE_MARKER }}
+        run: |
+          pnpm start > /tmp/rig.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://localhost:8787/health >/dev/null && break; sleep 1; done
+          mkdir -p site
+          curl -fsS http://localhost:8787/digest/2026-10-28 -o site/index.html
+          kill %1
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
